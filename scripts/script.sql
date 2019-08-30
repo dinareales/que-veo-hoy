@@ -1,6 +1,12 @@
 CREATE DATABASE peliculas_buscador;
 USE peliculas_buscador;
 
+CREATE TABLE genero (
+  id INT NOT NULL auto_increment,
+  nombre VARCHAR(30) NOT NULL,
+  PRIMARY KEY (id)
+);
+
 CREATE TABLE pelicula(
 	id INT NOT NULL auto_increment,
 	titulo VARCHAR(100) NOT NULL,
@@ -11,6 +17,8 @@ CREATE TABLE pelicula(
 	puntuacion INT(2),
 	poster VARCHAR(300),
 	trama VARCHAR(700),
-	PRIMARY KEY(id)
+	genero_id INT,
+	PRIMARY KEY(id),
+	FOREIGN KEY(genero_id) REFERENCES genero(id)
 );
 
