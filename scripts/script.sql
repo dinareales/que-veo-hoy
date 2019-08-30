@@ -22,3 +22,18 @@ CREATE TABLE pelicula(
 	FOREIGN KEY(genero_id) REFERENCES genero(id)
 );
 
+CREATE TABLE actor(
+	id INT NOT NULL auto_increment,
+	nombre VARCHAR(70) NOT NULL,
+	PRIMARY KEY(id)
+);
+
+CREATE TABLE actor_pelicula(
+	id INT NOT NULL auto_increment,
+	actor_id INT NOT NULL,
+	pelicula_id INT NOT NULL,
+	PRIMARY KEY(id),
+	FOREIGN KEY(actor_id) REFERENCES actor(id),
+	FOREIGN KEY(pelicula_id) REFERENCES pelicula(id)
+);
+

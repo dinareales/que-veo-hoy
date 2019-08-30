@@ -93,7 +93,91 @@ function obtenerGeneros(req, res){
   });
 }
 
+function informacionPeliculas(req, res){
+  var id = req.params.id;
+
+  //se crea la query que devuelve los actores de las pelicula seleccionada
+  var peticionSql = `SELECT pelicula.poster,
+                    pelicula.titulo,
+                    pelicula.anio,
+                    pelicula.trama,
+                    pelicula.fecha_lanzamiento,
+                    pelicula.director,
+                    pelicula.duracion,
+                    pelicula.puntuacion,
+                    actor.nombre,
+                    genero.nombre AS genero_nombre
+               FROM pelicula
+               JOIN actor_pelicula ON pelicula.id = actor_pelicula.pelicula_id
+               JOIN actor ON actor.id = actor_pelicula.actor_id
+               JOIN genero ON genero.id = pelicula.genero_id
+              WHERE pelicula.id = ` + id ;
+  conexionBaseDeDatos.query(peticionSql, function(error,resultado, campos){
+    if (error) {
+      console.log('Hubo un error en la consulta', error.message);
+      return res.status(404).send('Hubo un error en la consulta');
+    }
+    var respuesta = {
+      'pelicula' : resultado[0],
+      'genero' : resultado[0].genero_nombre,
+      'actores' : resultado.map(actor => actor),
+    };
+    res.send(JSON.stringify(respuesta));
+  });
+}
+
+function recomendarPeliculas(req,res){
+  //guardamos los parametros
+  var genero = req.query.genero;
+  var anio_inicio = req.query.anio_inicio;
+  var anio_fin = req.query.anio_fin;
+  var puntuacion = req.query.puntuacion;
+
+  //verificamos los parametros enviados para los filtros de recomendacion
+  var peticionSql = function (){
+    var query= `SELECT pelicula.id,
+                        pelicula.poster,
+                        pelicula.trama,
+                        pelicula.titulo,
+                        genero.nombre
+                   FROM pelicula 
+                   JOIN genero ON genero.id = pelicula.genero_id`;
+
+    if(genero || anio_inicio || anio_fin || puntuacion) {
+      query += ' WHERE ';
+      if(genero) {
+        query += 'genero.nombre = "' + genero + '"';
+        if(anio_inicio || anio_fin || puntuacion) {
+          query += ' AND ';
+        }
+      }
+      if(anio_inicio || anio_fin) {
+        query += 'pelicula.anio BETWEEN ' + anio_inicio + ' AND ' + anio_fin;
+        if(puntuacion) {
+          query += ' AND ';
+        }
+      }
+      if(puntuacion) {
+        query += 'pelicula.puntuacion = ' + puntuacion;
+      }
+    }
+    return query;
+  }
+  conexionBaseDeDatos.query(peticionSql(), function(error,resultado, campos){
+    if (error) {
+      console.log('Hubo un error en la consulta', error.message);
+      return res.status(404).send('Hubo un error en la consulta');
+    }
+    var respuesta = {
+      'peliculas' : resultado
+    };
+    res.send(JSON.stringify(respuesta));
+  });
+}
+
 module.exports = {
   mostrarPeliculas : mostrarPeliculas,
   obtenerGeneros: obtenerGeneros,
+  informacionPeliculas : informacionPeliculas,
+  recomendarPeliculas : recomendarPeliculas,
 };
