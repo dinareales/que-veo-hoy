@@ -1,4 +1,5 @@
 var conexionBaseDeDatos = require('../lib/conexionbd');
+var fs  = require("fs");
 
 function mostrarPeliculas(req, res) {
   // Guardamos los parametros enviados en la busqueda
@@ -11,12 +12,7 @@ function mostrarPeliculas(req, res) {
   var cantidad = req.query.cantidad;
 
   // Modularizamos las queries
-  var sqlInicial = `SELECT pelicula.id,
-                           pelicula.poster,
-                           pelicula.trama,
-                           pelicula.titulo
-                      FROM pelicula`;
-
+  var sqlInicial = leerSql("mostrarPeliculas.sql");
   var sqlTitulo = 'titulo LIKE "%' + titulo + '%"';
   var sqlGenero = 'genero_id = "' + genero + '"';
   var sqlAnio = 'anio = ' + anio;
@@ -97,21 +93,7 @@ function informacionPeliculas(req, res){
   var id = req.params.id;
 
   //se crea la query que devuelve los actores de las pelicula seleccionada
-  var peticionSql = `SELECT pelicula.poster,
-                    pelicula.titulo,
-                    pelicula.anio,
-                    pelicula.trama,
-                    pelicula.fecha_lanzamiento,
-                    pelicula.director,
-                    pelicula.duracion,
-                    pelicula.puntuacion,
-                    actor.nombre,
-                    genero.nombre AS genero_nombre
-               FROM pelicula
-               JOIN actor_pelicula ON pelicula.id = actor_pelicula.pelicula_id
-               JOIN actor ON actor.id = actor_pelicula.actor_id
-               JOIN genero ON genero.id = pelicula.genero_id
-              WHERE pelicula.id = ` + id ;
+  var peticionSql = leerSql("informacionPeliculas.sql")  + id ;
   conexionBaseDeDatos.query(peticionSql, function(error,resultado, campos){
     if (error) {
       console.log('Hubo un error en la consulta', error.message);
@@ -135,13 +117,7 @@ function recomendarPeliculas(req,res){
 
   //verificamos los parametros enviados para los filtros de recomendacion
   var peticionSql = function (){
-    var query= `SELECT pelicula.id,
-                        pelicula.poster,
-                        pelicula.trama,
-                        pelicula.titulo,
-                        genero.nombre
-                   FROM pelicula 
-                   JOIN genero ON genero.id = pelicula.genero_id`;
+    var query= leerSql('recomendarPeliculas.sql');
 
     if(genero || anio_inicio || anio_fin || puntuacion) {
       query += ' WHERE ';
@@ -173,6 +149,21 @@ function recomendarPeliculas(req,res){
     };
     res.send(JSON.stringify(respuesta));
   });
+}
+
+/**
+ funcion que permite leer  el contenido de una archivo
+  @archivo :: nombre del archivo
+  @carpeta :: paranetro opcional del nombre de la carpeta donde se encuentra  el archivo
+*/
+function leerSql(archivo, carpeta = "sql/") {
+   var query = fs.readFileSync(carpeta + archivo).toString()
+    .replace(/(\r\n|\n|\r)/gm," ") // remove newlines
+    .replace(/\s+/g, ' ') // excess white space
+    .split(";") // split into all statements
+    .map(Function.prototype.call, String.prototype.trim)
+    .filter(function(el) {return el.length != 0}); // remove any empty ones
+  return query;
 }
 
 module.exports = {
